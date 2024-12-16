@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Large File Processor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #000; /* Black background */
+            color: #fff;
+        }
+        .container {
+            background-color: #1e1e1e;
+            margin: 50px auto;
+            padding: 20px;
+            max-width: 400px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #00bcd4;
+            cursor: pointer;
+        }
+        input[type="file"], input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #444;
+            border-radius: 5px;
+            font-size: 16px;
+            background-color: #333;
+            color: #fff;
+        }
+        button {
+            background-color: #00bcd4;
+            color: #000;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        button:hover {
+            background-color: #0097a7;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #aaa;
+        }
+        .status {
+            margin-top: 15px;
+            color: #ffa;
+        }
+        .logo {
+            width: 200px;
+            height: auto;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+<!-- Background Music -->
+<audio id="backgroundMusic" muted loop>
+    <source src="https://l.top4top.io/m_3271ijvs01.mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
+</audio>
+
+<div class="container">
+    <img src="https://b.top4top.io/p_327105svo0.jpg" class="logo" alt="Logo">
+    <h1 onclick="playMusic()">Welcome</h1>
+
+    <label for="comboFile">Upload Combo File (up to 1 GB):</label>
+    <input type="file" id="comboFile" accept=".txt, .csv">
+    <label for="siteInput">Enter Site/Domain:</label>
+    <input type="text" id="siteInput" placeholder="e.g. facebook.com">
+    <button onclick="processLargeFile()">PROCESS AND DOWNLOAD</button>
+    <div class="status" id="status"></div>
+</div>
+
+<div class="footer">
+    Created by <strong>Mr Hacky</strong>
+</div>
+
+<script>
+// Function to play background music
+function playMusic() {
+    const music = document.getElementById('backgroundMusic');
+    music.muted = false; // Unmute the audio
+    music.play(); // Start playing the audio
+}
+
+async function processLargeFile() {
+    const file = document.getElementById('comboFile').files[0];
+    const site = document.getElementById('siteInput').value;
+    const status = document.getElementById('status');
+
+    if (!file) {
+        alert("Please upload a file.");
+        return;
+    }
+    if (!site) {
+        alert("Please enter a site or domain.");
+        return;
+    }
+
+    status.textContent = "Processing file...";
+
+    const filteredLines = [];
+    const CHUNK_SIZE = 1024 * 1024; // 1 MB chunks
+
+    const stream = file.stream().pipeThrough(new TextDecoderStream());
+    const reader = stream.getReader();
+    let { value: chunk, done } = await reader.read();
+    let leftover = "";
+
+    while (!done) {
+        const lines = (leftover + chunk).split("\n");
+        leftover = lines.pop(); // Save the last incomplete line
+
+        for (const line of lines) {
+            if (line.includes(site)) {
+                filteredLines.push(line);
+            }
+        }
+
+        // Read the next chunk
+        ({ value: chunk, done } = await reader.read());
+    }
+
+    // Process the final leftover line
+    if (leftover && leftover.includes(site)) {
+        filteredLines.push(leftover);
+    }
+
+    if (filteredLines.length === 0) {
+        status.textContent = "No matches found for the specified site.";
+        return;
+    }
+
+    // Create a downloadable Blob
+    const blob = new Blob([filteredLines.join("\n")], { type: "text/plain" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `filtered_${site}_combo.txt`;
+    link.click();
+
+    status.textContent = "Processing complete! File is ready for download.";
+}
+</script>
+
+</body>
+</html>
